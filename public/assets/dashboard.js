@@ -116,11 +116,24 @@
           </td>
         </tr>`).join("")}
       </tbody></table></div>` : '<div class="empty">No API tokens yet. Create one to start using the API.</div>'}`;
-    $("#newTokenBtn").addEventListener("click", () => openModal(`
+    $("#newTokenBtn").addEventListener("click", () => { openModal(`
       <h3>Create API token</h3>
       <div class="field"><label>Name</label><input class="input" id="tkName" placeholder="e.g. my-app-key" /></div>
       <div class="field"><label>Quota (credits, -1 = unlimited)</label><input class="input" id="tkQuota" type="number" value="-1" /></div>
-      <div class="modal-actions"><button class="btn btn-secondary btn-sm" onclick="document.getElementById('modalBackdrop').classList.remove('open')">Cancel</button><button class="btn btn-primary btn-sm" id="tkCreate">Create</button></div>`));
+      <div class="modal-actions"><button class="btn btn-secondary btn-sm" onclick="document.getElementById('modalBackdrop').classList.remove('open')">Cancel</button><button class="btn btn-primary btn-sm" id="tkCreate">Create</button></div>`);
+      $("#tkCreate").addEventListener("click", async () => {
+        try {
+          const res = await nx.api("/api/tokens", { method: "POST", body: { name: $("#tkName").value.trim(), quota: Number($("#tkQuota").value) } });
+          openModal(`
+            <h3>Token created</h3>
+            <p class="small dim mb-2">Copy this key now — it is shown only once.</p>
+            <div class="codebox">${nx.esc(res.key)}</div>
+            <div class="modal-actions"><button class="btn btn-secondary btn-sm" id="tkCopyBtn">Copy key</button><button class="btn btn-primary btn-sm" onclick="document.getElementById('modalBackdrop').classList.remove('open')">Done</button></div>`);
+          $("#tkCopyBtn").addEventListener("click", () => nx.copy(res.key));
+          viewTokens();
+        } catch (e) { nx.toast(e.message, false); }
+      });
+    });
     content.querySelectorAll("[data-copy]").forEach(b => b.addEventListener("click", () => nx.copy(b.dataset.copy)));
     content.querySelectorAll("[data-toggle]").forEach(b => b.addEventListener("click", async () => {
       await nx.api("/api/tokens/" + b.dataset.toggle, { method: "PATCH", body: { status: b.dataset.status === "1" ? 0 : 1 } });
@@ -131,19 +144,6 @@
       await nx.api("/api/tokens/" + b.dataset.del, { method: "DELETE" });
       nx.toast("Token deleted"); viewTokens();
     }));
-    const createBtn = $("#tkCreate");
-    if (createBtn) createBtn.addEventListener("click", async () => {
-      try {
-        const res = await nx.api("/api/tokens", { method: "POST", body: { name: $("#tkName").value.trim(), quota: Number($("#tkQuota").value) } });
-        openModal(`
-          <h3>Token created</h3>
-          <p class="small dim mb-2">Copy this key now — it is shown only once.</p>
-          <div class="codebox">${nx.esc(res.key)}</div>
-          <div class="modal-actions"><button class="btn btn-secondary btn-sm" id="tkCopyBtn">Copy key</button><button class="btn btn-primary btn-sm" onclick="document.getElementById('modalBackdrop').classList.remove('open')">Done</button></div>`);
-        $("#tkCopyBtn").addEventListener("click", () => nx.copy(res.key));
-        viewTokens();
-      } catch (e) { nx.toast(e.message, false); }
-    });
   }
 
   /* ============================ Logs ============================ */
@@ -252,10 +252,11 @@
 
     content.querySelectorAll("[data-test]").forEach(b => b.addEventListener("click", async () => {
       b.disabled = true; b.textContent = "Testing…";
+      const chName = b.closest("tr")?.querySelector("b")?.textContent || ("#" + b.dataset.test);
       try {
         const r = await nx.api(`/api/channels/${b.dataset.test}/test`, { method: "POST", body: {} });
-        r.ok ? nx.toast(`Channel OK (${r.latency_ms} ms)`) : nx.toast("Test failed: " + r.error, false);
-      } catch (e) { nx.toast(e.message, false); }
+        r.ok ? nx.toast(`${chName}: OK (${r.latency_ms} ms)`) : nx.toast(`${chName}: test failed — ${r.error}`, false);
+      } catch (e) { nx.toast(`${chName}: ${e.message}`, false); }
       b.disabled = false; b.textContent = "Test";
     }));
     content.querySelectorAll("[data-toggle]").forEach(b => b.addEventListener("click", async () => {
@@ -294,7 +295,7 @@
           </td>
         </tr>`).join("")}
       </tbody></table></div>`;
-    $("#addModelBtn").addEventListener("click", () => openModal(`
+    $("#addModelBtn").addEventListener("click", () => { openModal(`
       <h3>Add model</h3>
       <div class="field"><label>Model ID</label><input class="input" id="mId" placeholder="e.g. vendor/model-name" /></div>
       <div class="field"><label>Display name</label><input class="input" id="mName" /></div>
@@ -303,17 +304,17 @@
       <div class="field"><label>Price input / output / request ($)</label>
         <div class="row"><input class="input" id="mIn" type="number" step="0.01" value="0" /><input class="input" id="mOut" type="number" step="0.01" value="0" /><input class="input" id="mReq" type="number" step="0.01" value="0" /></div></div>
       <div class="field"><label>Context length</label><input class="input" id="mCtx" type="number" value="128000" /></div>
-      <div class="modal-actions"><button class="btn btn-secondary btn-sm" onclick="document.getElementById('modalBackdrop').classList.remove('open')">Cancel</button><button class="btn btn-primary btn-sm" id="mCreate">Add</button></div>`));
-    const mc = $("#mCreate");
-    if (mc) mc.addEventListener("click", async () => {
-      try {
-        await nx.api("/api/models", { method: "POST", body: {
-          model_id: $("#mId").value.trim(), display_name: $("#mName").value.trim(), vendor: $("#mVendor").value.trim(),
-          pricing_type: $("#mPricing").value, price_input: Number($("#mIn").value), price_output: Number($("#mOut").value),
-          price_request: Number($("#mReq").value), context_length: Number($("#mCtx").value),
-        }});
-        closeModal(); nx.toast("Model added"); viewModels();
-      } catch (e) { nx.toast(e.message, false); }
+      <div class="modal-actions"><button class="btn btn-secondary btn-sm" onclick="document.getElementById('modalBackdrop').classList.remove('open')">Cancel</button><button class="btn btn-primary btn-sm" id="mCreate">Add</button></div>`);
+      $("#mCreate").addEventListener("click", async () => {
+        try {
+          await nx.api("/api/models", { method: "POST", body: {
+            model_id: $("#mId").value.trim(), display_name: $("#mName").value.trim(), vendor: $("#mVendor").value.trim(),
+            pricing_type: $("#mPricing").value, price_input: Number($("#mIn").value), price_output: Number($("#mOut").value),
+            price_request: Number($("#mReq").value), context_length: Number($("#mCtx").value),
+          }});
+          closeModal(); nx.toast("Model added"); viewModels();
+        } catch (e) { nx.toast(e.message, false); }
+      });
     });
     content.querySelectorAll("[data-toggle]").forEach(b => b.addEventListener("click", async () => {
       await nx.api("/api/models/" + b.dataset.toggle, { method: "PATCH", body: { status: b.dataset.status === "1" ? 0 : 1 } });
