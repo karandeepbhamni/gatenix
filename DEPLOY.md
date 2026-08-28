@@ -100,27 +100,36 @@ SSL (https) Render khud laga dega — tumhe kuch nahi karna.
 
 ---
 
-## ⭐ Database persistence (Supabase Storage — deploy se data reset NA ho)
+## ⭐ Database persistence (GitHub backup — deploy se data reset NA ho)
 
 Render free tier har deploy par disk saaf kar deta hai. App ab SQLite file ko automatically
-**Supabase Storage** (free, bina card) par backup karti hai aur deploy ke baad restore kar leti hai.
+ek **private GitHub repo** mein backup karti hai aur deploy ke baad restore kar leti hai.
+100% free — tumhara GitHub account kaafi hai, koi card ya paid plan nahi.
 
-**Setup (ek hi baar):**
+**Setup (ek hi baar, ~5 min):**
 
-1. [supabase.com](https://supabase.com) → **Start your project** → GitHub se sign up (free)
-2. **New project** → naam `gatenix`, koi bhi password, region Singapore/Mumbai → ~1 min mein banega
-3. Left menu → **Storage** → **New bucket** → naam: `gatenix-db` → private hi rehne do → Create
-4. Left menu → **Project Settings** (gear icon) → **API Keys** → wahan se copy karo:
-   - **Project URL** (jaise `https://xxxx.supabase.co`)
-   - **service_role** wali key (secret key — `anon` wali NAHI)
-5. Render → gatenix service → **Environment** → ye 3 variables add karo:
-   - `SUPABASE_URL` = tumhara Project URL
-   - `SUPABASE_SERVICE_KEY` = service_role key
-   - `SUPABASE_BUCKET` = `gatenix-db`
-6. Save → Render redeploy karega. Logs mein `[persist] cloud backup enabled` dikhega.
+1. GitHub par ek **nayi PRIVATE repo** banao: naam `gatenix-data`
+   (khali repo — README/gitignore kuch mat daalo) → [github.com/new](https://github.com/new)
+2. Fine-grained token banao:
+   GitHub → profile → **Settings** → **Developer settings** → **Personal access tokens**
+   → **Fine-grained tokens** → **Generate new token**
+   - Token name: `gatenix-backup`
+   - Expiration: jitna lamba mile (ya No expiration)
+   - Repository access: **Only select repositories** → sirf `gatenix-data` select karo
+   - Permissions → **Repository permissions** → **Contents** → **Read and write**
+   - Generate → token copy karo (`github_pat_...` se shuru hota hai)
+3. Render → gatenix service → **Environment** → ye 2 variables add karo:
+   ```
+   GITHUB_BACKUP_TOKEN = github_pat_... (tumhara token)
+   GITHUB_BACKUP_REPO  = TUMHARA-USERNAME/gatenix-data
+   ```
+   (Agar pehle Supabase wale vars daale the to unhe DELETE kar do)
+4. Save → Render redeploy karega. Logs mein ye line dikhni chahiye:
+   `[persist] cloud backup enabled via github`
 
 Uske baad har deploy par database khud restore hoga — channels, tokens, settings, users sab bachega.
-Backup har 60 second mein (change hone par) aur shutdown par upload hota hai.
+Backup har 3 min mein (change hone par) aur shutdown par upload hota hai
+(`gatenix-data` repo mein `gatenix.db` file dikhegi).
 
 > Env vars daalne ke baad EK aakhri baar channels/settings dobara daalne padenge
 > (pehla backup abhi khali hai). Uske baad kabhi dobara nahi karna.

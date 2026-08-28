@@ -184,7 +184,8 @@ function seed() {
   }
 }
 /* ============================ Init + cloud persistence ============================ */
-const UPLOAD_INTERVAL_MS = Math.max(5000, Number(process.env.PERSIST_INTERVAL_MS || 60000));
+const DEFAULT_INTERVAL_MS = persist.backendName() === "github" ? 180000 : 60000;
+const UPLOAD_INTERVAL_MS = Math.max(5000, Number(process.env.PERSIST_INTERVAL_MS || DEFAULT_INTERVAL_MS));
 let lastUploadedMtime = 0;
 
 async function init() {
@@ -211,7 +212,7 @@ async function init() {
   };
   process.on("SIGTERM", () => shutdown("SIGTERM"));
   process.on("SIGINT", () => shutdown("SIGINT"));
-  console.log(`[persist] cloud backup enabled (uploads every ${Math.round(UPLOAD_INTERVAL_MS / 1000)}s when changed)`);
+  console.log(`[persist] cloud backup enabled via ${persist.backendName()} (uploads every ${Math.round(UPLOAD_INTERVAL_MS / 1000)}s when changed)`);
 }
 
 module.exports = {
