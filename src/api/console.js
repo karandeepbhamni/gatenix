@@ -210,7 +210,21 @@ router.post("/channels/:id/test", requireAdmin, async (req, res) => {
   if (!row) return res.status(404).json({ error: "Channel not found" });
   const provider = getProvider(row.type);
   if (!provider) return res.status(400).json({ error: "Unknown type" });
-  const testModel = (req.body && req.body.model) || "mock-chat";
+  let channelModels = [];
+  try { channelModels = JSON.parse(row.models || "[]"); } catch (e) {}
+  const DEFAULT_TEST_MODELS = {
+    mock: "mock-chat",
+    tokenrouter: "qwen/qwen3.8-max-free",
+    openrouter: "google/gemini-2.0-flash-exp:free",
+    groq: "llama-3.3-70b-versatile",
+    gemini: "gemini-2.5-flash",
+    ollama: "llama3.2",
+    anthropic: "claude-3-5-haiku-20241022",
+  };
+  const testModel = (req.body && req.body.model)
+    || (channelModels.length && channelModels[0] !== "*" ? channelModels[0] : null)
+    || DEFAULT_TEST_MODELS[row.type]
+    || "mock-chat";
   const t0 = Date.now();
   try {
     const upstream = await provider.chat({
@@ -220,9 +234,9 @@ router.post("/channels/:id/test", requireAdmin, async (req, res) => {
         : { model: testModel, max_tokens: 32, messages: [{ role: "user", content: "ping" }] },
     });
     const text = await upstream.text();
-    res.json({ ok: true, status: upstream.status, latency_ms: Date.now() - t0, preview: text.slice(0, 300) });
+    res.json({ ok: true, status: upstream.status, model: testModel, latency_ms: Date.now() - t0, preview: text.slice(0, 300) });
   } catch (e) {
-    res.json({ ok: false, error: String(e.message).slice(0, 400), latency_ms: Date.now() - t0 });
+    res.json({ ok: false, model: testModel, error: String(e.message).slice(0, 400), latency_ms: Date.now() - t0 });
   }
 });
 

@@ -255,7 +255,7 @@
       const chName = b.closest("tr")?.querySelector("b")?.textContent || ("#" + b.dataset.test);
       try {
         const r = await nx.api(`/api/channels/${b.dataset.test}/test`, { method: "POST", body: {} });
-        r.ok ? nx.toast(`${chName}: OK (${r.latency_ms} ms)`) : nx.toast(`${chName}: test failed — ${r.error}`, false);
+        r.ok ? nx.toast(`${chName}: OK (${r.latency_ms} ms)`) : nx.toast(`${chName}: test failed on "${r.model || "?"}" — ${r.error}`, false);
       } catch (e) { nx.toast(`${chName}: ${e.message}`, false); }
       b.disabled = false; b.textContent = "Test";
     }));
