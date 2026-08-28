@@ -372,6 +372,16 @@
         <div class="field"><label>Default quota for new users (credits)</label><input class="input" id="sQuota" type="number" value="${nx.esc(s.default_user_quota || "500000")}" /></div>
         <div class="field"><label>Server address (shown in docs)</label><input class="input" id="sAddr" value="${nx.esc(s.server_address || "")}" placeholder="https://api.yourdomain.com" /></div>
         <button class="btn btn-primary btn-sm" id="saveSettings">Save settings</button>
+      </div>
+      <div class="card mt-3" style="max-width:560px">
+        <div class="card-title">Social login (OAuth)</div>
+        <p class="small dim mb-2">Enable "Continue with GitHub / Google" on the sign-in page. Callback URLs to register:</p>
+        <div class="codebox mb-2" style="font-size:0.72rem">${location.origin}/api/auth/github/callback<br>${location.origin}/api/auth/google/callback</div>
+        <div class="field"><label>GitHub Client ID</label><input class="input mono" id="oGhId" value="${nx.esc(s.github_client_id || "")}" placeholder="e.g. Iv1.abc123…" /></div>
+        <div class="field"><label>GitHub Client Secret</label><input class="input mono" id="oGhSecret" value="${nx.esc(s.github_client_secret || "")}" placeholder="generate one in your GitHub OAuth app" /></div>
+        <div class="field"><label>Google Client ID</label><input class="input mono" id="oGgId" value="${nx.esc(s.google_client_id || "")}" placeholder="xxxx.apps.googleusercontent.com" /></div>
+        <div class="field"><label>Google Client Secret</label><input class="input mono" id="oGgSecret" value="${nx.esc(s.google_client_secret || "")}" placeholder="GOCSPX-…" /></div>
+        <button class="btn btn-primary btn-sm" id="saveOAuth">Save social login</button>
       </div>`;
     $("#saveSettings").addEventListener("click", async () => {
       await nx.api("/api/settings", { method: "PUT", body: {
@@ -379,6 +389,13 @@
         default_user_quota: $("#sQuota").value, server_address: $("#sAddr").value,
       }});
       nx.toast("Settings saved");
+    });
+    $("#saveOAuth").addEventListener("click", async () => {
+      await nx.api("/api/settings", { method: "PUT", body: {
+        github_client_id: $("#oGhId").value.trim(), github_client_secret: $("#oGhSecret").value.trim(),
+        google_client_id: $("#oGgId").value.trim(), google_client_secret: $("#oGgSecret").value.trim(),
+      }});
+      nx.toast("Social login saved");
     });
   }
 

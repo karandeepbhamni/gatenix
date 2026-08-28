@@ -8,6 +8,7 @@ const consoleApi = require("./src/api/console");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.set("trust proxy", true);
 app.disable("x-powered-by");
 app.use(express.json({ limit: "10mb" }));
 

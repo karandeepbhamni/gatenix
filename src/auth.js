@@ -106,6 +106,143 @@ router.get("/me", (req, res) => {
   res.json({ user: publicUser(user) });
 });
 
+/* ============================ Social login (OAuth) ============================ */
+function getSetting(key) {
+  return db.prepare("SELECT value FROM settings WHERE key = ?").get(key)?.value || "";
+}
+function originOf(req) {
+  return `${req.protocol}://${req.get("host")}`;
+}
+const STATE_COOKIE = "nexus_oauth_state";
+function setStateCookie(res, state) {
+  res.setHeader("Set-Cookie", `${STATE_COOKIE}=${state}; Path=/; HttpOnly; SameSite=Lax; Max-Age=600`);
+}
+function takeState(req) {
+  const state = parseCookies(req)[STATE_COOKIE] || "";
+  return state;
+}
+function clearStateCookie(res) {
+  res.setHeader("Set-Cookie", `${STATE_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`);
+}
+
+function upsertOAuthUser({ provider, providerId, username, email, name }) {
+  const idCol = provider === "github" ? "github_id" : "google_id";
+  let user = db.prepare(`SELECT * FROM users WHERE ${idCol} = ?`).get(providerId);
+  if (!user && email) user = db.prepare("SELECT email FROM users WHERE email = ?").get(email)
+    ? db.prepare("SELECT * FROM users WHERE email = ?").get(email) : null;
+  if (user) {
+    db.prepare(`UPDATE users SET ${idCol} = ? WHERE id = ?`).run(providerId, user.id);
+    return db.prepare("SELECT * FROM users WHERE id = ?").get(user.id);
+  }
+  let uname = String(username || email?.split("@")[0] || `${provider}_user`).trim().slice(0, 32);
+  const clash = db.prepare("SELECT id FROM users WHERE username = ?").get(uname);
+  if (clash) uname = `${uname}_${crypto.randomBytes(3).toString("hex")}`;
+  const quota = Number(getSetting("default_user_quota") || 500000);
+  const randomPw = hashPassword(crypto.randomBytes(32).toString("hex"));
+  const info = db.prepare(
+    `INSERT INTO users (username, email, password_hash, role, quota, ${idCol}) VALUES (?, ?, ?, 'user', ?, ?)`
+  ).run(uname, email || null, randomPw, quota, providerId);
+  return db.prepare("SELECT * FROM users WHERE id = ?").get(info.lastInsertRowid);
+}
+
+router.get("/providers", (req, res) => {
+  res.json({
+    github: Boolean(getSetting("github_client_id")),
+    google: Boolean(getSetting("google_client_id")),
+  });
+});
+
+/* ---- GitHub ---- */
+router.get("/github", (req, res) => {
+  const clientId = getSetting("github_client_id");
+  if (!clientId) return res.status(404).json({ error: "GitHub login is not configured" });
+  const state = crypto.randomBytes(16).toString("hex");
+  setStateCookie(res, state);
+  const url = new URL("https://github.com/login/oauth/authorize");
+  url.searchParams.set("client_id", clientId);
+  url.searchParams.set("redirect_uri", `${originOf(req)}/api/auth/github/callback`);
+  url.searchParams.set("scope", "read:user user:email");
+  url.searchParams.set("state", state);
+  res.redirect(url.toString());
+});
+
+router.get("/github/callback", async (req, res) => {
+  const fail = (msg) => res.redirect(`/sign-in?oauth_error=${encodeURIComponent(msg)}`);
+  try {
+    const { code, state } = req.query;
+    const saved = takeState(req);
+    clearStateCookie(res);
+    if (!code || !saved || state !== saved) return fail("OAuth state mismatch. Try again.");
+    const clientId = getSetting("github_client_id");
+    const secret = getSetting("github_client_secret");
+    const tokenRes = await fetch("https://github.com/login/oauth/access_token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ client_id: clientId, client_secret: secret, code, redirect_uri: `${originOf(req)}/api/auth/github/callback` }),
+    });
+    const tokenJson = await tokenRes.json();
+    if (!tokenJson.access_token) return fail(tokenJson.error_description || "GitHub token exchange failed");
+    const auth = { Authorization: `Bearer ${tokenJson.access_token}`, "User-Agent": "Gatenix", Accept: "application/vnd.github+json" };
+    const ghUser = await (await fetch("https://api.github.com/user", { headers: auth })).json();
+    let email = ghUser.email;
+    if (!email) {
+      const emails = await (await fetch("https://api.github.com/user/emails", { headers: auth })).json();
+      if (Array.isArray(emails)) email = (emails.find(e => e.primary && e.verified) || emails[0] || {}).email || null;
+    }
+    const user = upsertOAuthUser({ provider: "github", providerId: String(ghUser.id), username: ghUser.login, email, name: ghUser.name });
+    if (user.status !== 1) return fail("Account disabled");
+    setSessionCookie(res, createSession(user.id));
+    res.redirect("/dashboard");
+  } catch (e) {
+    fail(e.message || "GitHub login failed");
+  }
+});
+
+/* ---- Google ---- */
+router.get("/google", (req, res) => {
+  const clientId = getSetting("google_client_id");
+  if (!clientId) return res.status(404).json({ error: "Google login is not configured" });
+  const state = crypto.randomBytes(16).toString("hex");
+  setStateCookie(res, state);
+  const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+  url.searchParams.set("client_id", clientId);
+  url.searchParams.set("redirect_uri", `${originOf(req)}/api/auth/google/callback`);
+  url.searchParams.set("response_type", "code");
+  url.searchParams.set("scope", "openid email profile");
+  url.searchParams.set("state", state);
+  res.redirect(url.toString());
+});
+
+router.get("/google/callback", async (req, res) => {
+  const fail = (msg) => res.redirect(`/sign-in?oauth_error=${encodeURIComponent(msg)}`);
+  try {
+    const { code, state } = req.query;
+    const saved = takeState(req);
+    clearStateCookie(res);
+    if (!code || !saved || state !== saved) return fail("OAuth state mismatch. Try again.");
+    const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code, client_id: getSetting("google_client_id"), client_secret: getSetting("google_client_secret"),
+        redirect_uri: `${originOf(req)}/api/auth/google/callback`, grant_type: "authorization_code",
+      }).toString(),
+    });
+    const tokenJson = await tokenRes.json();
+    if (!tokenJson.access_token) return fail(tokenJson.error_description || "Google token exchange failed");
+    const info = await (await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+      headers: { Authorization: `Bearer ${tokenJson.access_token}` },
+    })).json();
+    if (!info.sub) return fail("Could not read Google profile");
+    const user = upsertOAuthUser({ provider: "google", providerId: String(info.sub), username: info.preferred_username || info.name || info.email, email: info.email, name: info.name });
+    if (user.status !== 1) return fail("Account disabled");
+    setSessionCookie(res, createSession(user.id));
+    res.redirect("/dashboard");
+  } catch (e) {
+    fail(e.message || "Google login failed");
+  }
+});
+
 /* Housekeeping: purge expired sessions occasionally */
 setInterval(() => {
   try { db.prepare("DELETE FROM sessions WHERE expires_at < ?").run(Date.now()); } catch {}
