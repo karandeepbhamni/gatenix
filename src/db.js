@@ -8,12 +8,19 @@ const DATA_DIR = path.join(__dirname, "..", "data");
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 const DB_PATH = path.join(DATA_DIR, "gatenix.db");
 
-const db = new DatabaseSync(DB_PATH);
-db.exec("PRAGMA journal_mode = WAL;");
-db.exec("PRAGMA foreign_keys = ON;");
+const persist = require("./persist");
+
+let db;
+
+function openDatabase() {
+  db = new DatabaseSync(DB_PATH);
+  db.exec("PRAGMA journal_mode = WAL;");
+  db.exec("PRAGMA foreign_keys = ON;");
+}
 
 /* ============================ Schema ============================ */
-db.exec(`
+function createSchema() {
+  db.exec(`
 CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   username TEXT UNIQUE NOT NULL,
@@ -97,9 +104,10 @@ CREATE TABLE IF NOT EXISTS settings (
 CREATE INDEX IF NOT EXISTS idx_logs_created ON logs(created_at);
 CREATE INDEX IF NOT EXISTS idx_tokens_key ON api_tokens(token_key);
 `);
+}
 
 /* ============================ Migrations (idempotent, run AFTER schema) ============================ */
-{
+function runMigrations() {
   const userCols = db.prepare("PRAGMA table_info(users)").all().map(c => c.name);
   if (!userCols.includes("github_id")) db.exec("ALTER TABLE users ADD COLUMN github_id TEXT");
   if (!userCols.includes("google_id")) db.exec("ALTER TABLE users ADD COLUMN google_id TEXT");
@@ -175,6 +183,40 @@ function seed() {
     ins.run("server_address", "");
   }
 }
-seed();
+/* ============================ Init + cloud persistence ============================ */
+const UPLOAD_INTERVAL_MS = Math.max(5000, Number(process.env.PERSIST_INTERVAL_MS || 60000));
+let lastUploadedMtime = 0;
 
-module.exports = { db, hashPassword, verifyPassword, newApiKey };
+async function init() {
+  await persist.restore(DB_PATH);
+  openDatabase();
+  createSchema();
+  runMigrations();
+  seed();
+  if (!persist.enabled()) return;
+  setInterval(async () => {
+    try {
+      db.exec("PRAGMA wal_checkpoint(PASSIVE);");
+      const mtime = fs.statSync(DB_PATH).mtimeMs;
+      if (mtime > lastUploadedMtime) {
+        if (await persist.upload(db, DB_PATH)) lastUploadedMtime = mtime;
+      }
+    } catch (e) { console.warn("[persist] auto-upload tick error:", e.message); }
+  }, UPLOAD_INTERVAL_MS).unref();
+  const shutdown = async (signal) => {
+    console.log(`[persist] ${signal} received — uploading database backup…`);
+    try { db.exec("PRAGMA wal_checkpoint(TRUNCATE);"); } catch {}
+    try { await persist.upload(db, DB_PATH); } catch {}
+    process.exit(0);
+  };
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+  process.on("SIGINT", () => shutdown("SIGINT"));
+  console.log(`[persist] cloud backup enabled (uploads every ${Math.round(UPLOAD_INTERVAL_MS / 1000)}s when changed)`);
+}
+
+module.exports = {
+  get db() { return db; },
+  init,
+  DB_PATH,
+  hashPassword, verifyPassword, newApiKey,
+};

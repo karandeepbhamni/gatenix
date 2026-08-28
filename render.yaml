@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: nexusai
+    name: gatenix
     runtime: node
     plan: free
     buildCommand: npm install
@@ -8,4 +8,4 @@ services:
     healthCheckPath: /api/health
     envVars:
       - key: NODE_VERSION
-        value: "22.12.0"
+        value: "24"

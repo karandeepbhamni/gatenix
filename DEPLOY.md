@@ -100,6 +100,33 @@ SSL (https) Render khud laga dega — tumhe kuch nahi karna.
 
 ---
 
+## ⭐ Database persistence (Supabase Storage — deploy se data reset NA ho)
+
+Render free tier har deploy par disk saaf kar deta hai. App ab SQLite file ko automatically
+**Supabase Storage** (free, bina card) par backup karti hai aur deploy ke baad restore kar leti hai.
+
+**Setup (ek hi baar):**
+
+1. [supabase.com](https://supabase.com) → **Start your project** → GitHub se sign up (free)
+2. **New project** → naam `gatenix`, koi bhi password, region Singapore/Mumbai → ~1 min mein banega
+3. Left menu → **Storage** → **New bucket** → naam: `gatenix-db` → private hi rehne do → Create
+4. Left menu → **Project Settings** (gear icon) → **API Keys** → wahan se copy karo:
+   - **Project URL** (jaise `https://xxxx.supabase.co`)
+   - **service_role** wali key (secret key — `anon` wali NAHI)
+5. Render → gatenix service → **Environment** → ye 3 variables add karo:
+   - `SUPABASE_URL` = tumhara Project URL
+   - `SUPABASE_SERVICE_KEY` = service_role key
+   - `SUPABASE_BUCKET` = `gatenix-db`
+6. Save → Render redeploy karega. Logs mein `[persist] cloud backup enabled` dikhega.
+
+Uske baad har deploy par database khud restore hoga — channels, tokens, settings, users sab bachega.
+Backup har 60 second mein (change hone par) aur shutdown par upload hota hai.
+
+> Env vars daalne ke baad EK aakhri baar channels/settings dobara daalne padenge
+> (pehla backup abhi khali hai). Uske baad kabhi dobara nahi karna.
+
+---
+
 ## Future: agar kabhi Hostinger Business/Cloud lo
 
 Tab app ko seedha Hostinger par bhi chala sakte ho (hPanel → Node.js section, unke naye plans mein
