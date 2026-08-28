@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Model Square — Gatenix</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/assets/styles.css" />
+<style>
+  .ms-nav { position: sticky; top: 0; z-index: 40; border-bottom: 1px solid var(--border-hairline); background: color-mix(in srgb, var(--background) 85%, transparent); backdrop-filter: blur(12px); }
+  .ms-nav-in { max-width: 80rem; margin: 0 auto; padding: 0.75rem 1.5rem; display: flex; align-items: center; gap: 1rem; }
+  .ms-logo { display: flex; align-items: center; gap: 0.5rem; font-weight: 700; }
+  .ms-logo svg { width: 26px; height: 26px; }
+  .ms-links { display: flex; gap: 0.25rem; margin-left: 0.5rem; }
+  .ms-link { padding: 0.4rem 0.85rem; border-radius: 10px; font-size: 0.875rem; color: var(--foreground-60); font-weight: 500; }
+  .ms-link:hover, .ms-link.active { color: var(--foreground); background: var(--muted); }
+  .ms-head { max-width: 80rem; margin: 0 auto; padding: 3rem 1.5rem 1.5rem; }
+  .ms-head h1 { font-size: clamp(1.9rem, 3.5vw, 2.6rem); font-weight: 700; letter-spacing: -0.02em; }
+  .ms-count { color: var(--foreground-60); margin-top: 0.4rem; font-size: 0.95rem; }
+  .ms-sub { color: var(--foreground-40); margin-top: 0.3rem; font-size: 0.9rem; max-width: 40rem; }
+  .ms-toolbar { max-width: 80rem; margin: 0 auto; padding: 1rem 1.5rem; display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; }
+  .ms-search { flex: 1; min-width: 220px; position: relative; }
+  .ms-search .input { padding-left: 2.4rem; }
+  .ms-search svg { position: absolute; left: 0.8rem; top: 50%; transform: translateY(-50%); color: var(--foreground-40); }
+  .ms-body { max-width: 80rem; margin: 0 auto; padding: 0.5rem 1.5rem 4rem; display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
+  @media (min-width: 900px) { .ms-body { grid-template-columns: 230px 1fr; } }
+  .ms-filters { display: flex; flex-direction: column; gap: 1.25rem; }
+  .fgroup h4 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--foreground-40); margin-bottom: 0.5rem; }
+  .fopt { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 0.4rem 0.6rem; border-radius: 8px; border: none; background: none; color: var(--foreground-60); font-size: 0.85rem; text-align: left; }
+  .fopt:hover { background: var(--muted); color: var(--foreground); }
+  .fopt.active { background: var(--muted-hover); color: var(--foreground); font-weight: 600; }
+  .fopt .n { font-size: 0.72rem; color: var(--foreground-40); }
+  .ms-grid { display: grid; gap: 1rem; grid-template-columns: 1fr; align-content: start; }
+  @media (min-width: 700px) { .ms-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1200px) { .ms-grid { grid-template-columns: repeat(3, 1fr); } }
+  .mcard { background: var(--muted); border: 1px solid var(--border-soft); border-radius: var(--radius-xl); padding: 1.25rem; display: flex; flex-direction: column; gap: 0.6rem; transition: all 0.18s ease; }
+  .mcard:hover { border-color: var(--border); transform: translateY(-2px); }
+  .mcard-top { display: flex; align-items: center; gap: 0.7rem; }
+  .mv-logo { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem; color: #fff; flex-shrink: 0; }
+  .mname { font-weight: 600; font-size: 0.95rem; word-break: break-all; }
+  .mvendor { font-size: 0.75rem; color: var(--foreground-40); }
+  .mdesc { font-size: 0.8rem; color: var(--foreground-60); min-height: 2.4em; }
+  .mprice { font-size: 1.05rem; font-weight: 700; }
+  .mprice .per { font-size: 0.72rem; color: var(--foreground-40); font-weight: 400; }
+  .mfoot { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; margin-top: auto; }
+</style>
+</head>
+<body>
+<nav class="ms-nav">
+  <div class="ms-nav-in">
+    <a class="ms-logo" href="/" id="logo">Gatenix</a>
+    <div class="ms-links">
+      <a class="ms-link" href="/">Home</a>
+      <a class="ms-link" href="/dashboard">Console</a>
+      <a class="ms-link active" href="/pricing">Model Square</a>
+    </div>
+    <div style="flex:1"></div>
+    <button class="icon-btn" data-theme-toggle title="Toggle theme">
+      <svg data-theme-icon="dark" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+      <svg data-theme-icon="light" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    </button>
+    <a class="btn btn-primary btn-sm" href="/sign-in" id="authBtn">Sign in</a>
+  </div>
+</nav>
+
+<header class="ms-head">
+  <h1>Model Square</h1>
+  <p class="ms-count" id="count">Loading models…</p>
+  <p class="ms-sub">Discover available AI models, compare pricing and capabilities, and choose the right model for every scenario.</p>
+</header>
+
+<div class="ms-toolbar">
+  <div class="ms-search">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input class="input" id="search" placeholder="Search model name, vendor, or tag…" />
+  </div>
+  <select class="select" id="sortSel" style="width:auto;min-width:150px">
+    <option value="name">Sort: Name</option>
+    <option value="vendor">Sort: Vendor</option>
+    <option value="price">Sort: Price</option>
+  </select>
+</div>
+
+<div class="ms-body">
+  <aside class="ms-filters" id="filters"></aside>
+  <main><div class="ms-grid" id="grid"></div><div class="empty" id="empty" style="display:none">No models match your filters.</div></main>
+</div>
+
+<script src="/assets/app.js"></script>
+<script>
+document.getElementById("logo").insertAdjacentHTML("afterbegin", nx.logoSVG);
+const VCOLORS = { Anthropic:"#d97757", OpenAI:"#10a37f", Google:"#4285f4", Gemini:"#4285f4", Qwen:"#7c3aed", Meta:"#0866ff", DeepSeek:"#4d6bfe", Gatenix:"#a855f7", Groq:"#f55036" };
+const vColor = v => VCOLORS[v] || "#54708c";
+
+let MODELS = [];
+const state = { q: "", vendor: "", group: "", pricing: "", endpoint: "", sort: "name" };
+
+async function load() {
+  try {
+    const me = await nx.api("/api/auth/me").catch(() => null);
+    if (me?.user) {
+      const b = document.getElementById("authBtn");
+      b.textContent = "Console"; b.href = "/dashboard";
+    }
+    const data = await nx.api("/api/models");
+    MODELS = data.models;
+    buildFilters();
+    render();
+  } catch (e) {
+    document.getElementById("count").textContent = "Failed to load models.";
+  }
+}
+
+function buildFilters() {
+  const vendors = {}, groups = {}, pricings = { free: 0, token: 0, per_request: 0 }, endpoints = {};
+  for (const m of MODELS) {
+    vendors[m.vendor || "Other"] = (vendors[m.vendor || "Other"] || 0) + 1;
+    groups[m.group_name] = (groups[m.group_name] || 0) + 1;
+    pricings[m.pricing_type] = (pricings[m.pricing_type] || 0) + 1;
+    for (const e of m.endpoints) endpoints[e] = (endpoints[e] || 0) + 1;
+  }
+  const el = document.getElementById("filters");
+  const group = (title, key, opts) => `
+    <div class="fgroup"><h4>${title}</h4>
+      <button class="fopt ${state[key] === "" ? "active" : ""}" data-k="${key}" data-v="">All <span class="n">${MODELS.length}</span></button>
+      ${Object.entries(opts).map(([v, n]) => `<button class="fopt ${state[key] === v ? "active" : ""}" data-k="${key}" data-v="${nx.esc(v)}">${nx.esc(v)} <span class="n">${n}</span></button>`).join("")}
+    </div>`;
+  el.innerHTML =
+    group("Vendors", "vendor", vendors) +
+    group("Groups", "group", groups) +
+    group("Pricing Type", "pricing", Object.fromEntries(Object.entries(pricings).filter(([, n]) => n > 0))) +
+    group("Endpoint", "endpoint", endpoints);
+  el.querySelectorAll(".fopt").forEach(b => b.addEventListener("click", () => {
+    state[b.dataset.k] = b.dataset.v; buildFilters(); render();
+  }));
+}
+
+function priceLabel(m) {
+  if (m.pricing_type === "free") return `<span class="mprice" style="color:var(--green)">Free</span>`;
+  if (m.pricing_type === "per_request") return `<span class="mprice">$${m.price_request}<span class="per"> / request</span></span>`;
+  return `<span class="mprice">$${m.price_input} / $${m.price_output}<span class="per"> per 1M tok (in/out)</span></span>`;
+}
+
+function render() {
+  const q = state.q.toLowerCase();
+  let list = MODELS.filter(m =>
+    (!state.vendor || (m.vendor || "Other") === state.vendor) &&
+    (!state.group || m.group_name === state.group) &&
+    (!state.pricing || m.pricing_type === state.pricing) &&
+    (!state.endpoint || m.endpoints.includes(state.endpoint)) &&
+    (!q || m.model_id.toLowerCase().includes(q) || (m.vendor || "").toLowerCase().includes(q) || m.tags.some(t => t.toLowerCase().includes(q)))
+  );
+  if (state.sort === "name") list.sort((a, b) => a.model_id.localeCompare(b.model_id));
+  if (state.sort === "vendor") list.sort((a, b) => (a.vendor || "").localeCompare(b.vendor || "") || a.model_id.localeCompare(b.model_id));
+  if (state.sort === "price") list.sort((a, b) => (a.pricing_type === "free" ? -1 : a.price_input + a.price_output + a.price_request) - (b.pricing_type === "free" ? -1 : b.price_input + b.price_output + b.price_request));
+
+  document.getElementById("count").textContent = `This site currently has ${MODELS.length} models enabled`;
+  const grid = document.getElementById("grid");
+  document.getElementById("empty").style.display = list.length ? "none" : "block";
+  grid.innerHTML = list.map(m => `
+    <div class="mcard">
+      <div class="mcard-top">
+        <div class="mv-logo" style="background:${vColor(m.vendor)}">${nx.esc((m.vendor || "?").slice(0, 1))}</div>
+        <div><div class="mname">${nx.esc(m.display_name || m.model_id)}</div><div class="mvendor mono">${nx.esc(m.model_id)}</div></div>
+      </div>
+      <div class="mdesc">${nx.esc(m.description || "No description available.")}</div>
+      ${priceLabel(m)}
+      <div class="mfoot">
+        ${m.pricing_type === "free" ? '<span class="chip badge-free">FREE</span>' : ""}
+        <span class="chip">${nx.esc(m.group_name)}</span>
+        ${m.endpoints.map(e => `<span class="chip">${nx.esc(e)}</span>`).join("")}
+        <span class="chip">${Math.round(m.context_length / 1000)}K ctx</span>
+        <button class="btn btn-ghost btn-sm" style="margin-left:auto" data-copy="${nx.esc(m.model_id)}">Copy</button>
+      </div>
+    </div>`).join("");
+  grid.querySelectorAll("[data-copy]").forEach(b => b.addEventListener("click", () => nx.copy(b.dataset.copy)));
+}
+
+document.getElementById("search").addEventListener("input", e => { state.q = e.target.value; render(); });
+document.getElementById("sortSel").addEventListener("change", e => { state.sort = e.target.value; render(); });
+load();
+</script>
+</body>
+</html>

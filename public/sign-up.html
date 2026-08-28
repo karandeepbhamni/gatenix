@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sign up — Gatenix</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/assets/styles.css" />
+</head>
+<body>
+<div class="auth-wrap">
+  <div class="auth-box">
+    <a class="auth-logo" href="/" id="logo">Gatenix</a>
+    <div class="auth-card">
+      <h1>Create account</h1>
+      <p class="auth-sub">Already have an account? <a href="/sign-in">Sign in</a>.</p>
+      <div class="alert alert-error" id="alert"></div>
+      <form id="form">
+        <div class="field">
+          <label for="username">Username</label>
+          <input class="input" id="username" placeholder="Choose a username" autocomplete="username" minlength="3" required />
+        </div>
+        <div class="field">
+          <label for="email">Email <span class="dim">(optional)</span></label>
+          <input class="input" id="email" type="email" placeholder="you@example.com" autocomplete="email" />
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input class="input" id="password" type="password" placeholder="At least 6 characters" autocomplete="new-password" minlength="6" required />
+        </div>
+        <button class="btn btn-primary btn-block" id="submitBtn" type="submit">Create account</button>
+      </form>
+      <p class="hint" style="margin-top:1rem">New accounts get a free starter quota. Create API keys in the console after signing up.</p>
+    </div>
+  </div>
+</div>
+<script src="/assets/app.js"></script>
+<script>
+document.getElementById("logo").insertAdjacentHTML("afterbegin", nx.logoSVG);
+const alertEl = document.getElementById("alert");
+document.getElementById("form").addEventListener("submit", async e => {
+  e.preventDefault();
+  alertEl.classList.remove("show");
+  const btn = document.getElementById("submitBtn");
+  btn.disabled = true; btn.textContent = "Creating…";
+  try {
+    await nx.api("/api/auth/signup", { method: "POST", body: {
+      username: document.getElementById("username").value.trim(),
+      email: document.getElementById("email").value.trim() || null,
+      password: document.getElementById("password").value,
+    }});
+    location.href = "/dashboard";
+  } catch (err) {
+    alertEl.textContent = err.message;
+    alertEl.classList.add("show");
+    btn.disabled = false; btn.textContent = "Create account";
+  }
+});
+</script>
+</body>
+</html>
