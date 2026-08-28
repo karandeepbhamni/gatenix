@@ -28,7 +28,7 @@ Built with **Node.js + Express + SQLite** (zero native dependencies — uses Nod
 Requirements: **Node.js 22.5+** (Node 24 recommended).
 
 ```bash
-cd nexusai
+cd gatenix
 npm install
 npm start
 ```
@@ -90,7 +90,7 @@ The gateway ships with channel templates. In **Console → Channels → + Add ch
 ## 🗂 Project structure
 
 ```
-nexusai/
+gatenix/
 ├── server.js               # Express entry point
 ├── package.json
 ├── src/
@@ -110,7 +110,7 @@ nexusai/
 │   ├── sign-in.html / sign-up.html / forgot-password.html
 │   ├── dashboard.html      # Console SPA shell
 │   └── assets/             # styles.css, app.js, dashboard.js
-└── data/nexusai.db         # SQLite database (auto-created)
+└── data/gatenix.db         # SQLite database (auto-created)
 ```
 
 ---
@@ -120,7 +120,7 @@ nexusai/
 - **Port:** set `PORT` env var (default `3000`).
 - **Admin password:** Console → Profile → Change password.
 - **Site settings:** Console → Settings (site name, default quota for new users).
-- **Database:** `data/nexusai.db` — back this file up to preserve users/tokens/logs.
+- **Database:** `data/gatenix.db` — back this file up to preserve users/tokens/logs.
 
 ---
 

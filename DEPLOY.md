@@ -35,7 +35,7 @@ Project folder mein git already init+commit ho chuka hai (maine kar diya).
 Ab Git Bash mein ye commands chalao (apna username):
 
 ```bash
-cd /c/Users/DELL/.zcode/workspace/default/nexusai
+cd /c/Users/DELL/.zcode/workspace/default/gatenix
 git branch -M main
 git remote add origin https://github.com/TUMHARA-USERNAME/gatenix.git
 git push -u origin main
