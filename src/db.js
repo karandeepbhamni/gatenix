@@ -111,6 +111,18 @@ function runMigrations() {
   const userCols = db.prepare("PRAGMA table_info(users)").all().map(c => c.name);
   if (!userCols.includes("github_id")) db.exec("ALTER TABLE users ADD COLUMN github_id TEXT");
   if (!userCols.includes("google_id")) db.exec("ALTER TABLE users ADD COLUMN google_id TEXT");
+
+  // TokenRouter removed qwen/qwen3.8-max-free; replace with z-ai/glm-5.3-free (both live DBs and fresh ones keep working)
+  const glmFree = db.prepare("SELECT id FROM models WHERE model_id = 'z-ai/glm-5.3-free'").get();
+  if (!glmFree) {
+    db.prepare(
+      `INSERT INTO models (model_id, display_name, vendor, description, pricing_type,
+        price_input, price_output, price_request, context_length, endpoints, group_name, tags, status)
+       VALUES ('z-ai/glm-5.3-free', 'GLM 5.3 (Free)', 'Z.ai', 'Free tier via TokenRouter. Add a TokenRouter channel with your free key.', 'free', 0, 0, 0, 262144, '["openai"]', 'default', '["free","reasoning"]', 1)`
+    ).run();
+    console.log("[migrate] added free model z-ai/glm-5.3-free (TokenRouter)");
+  }
+  db.prepare("UPDATE models SET status = 0 WHERE model_id = 'qwen/qwen3.8-max-free' AND status = 1").run();
 }
 
 /* ============================ Helpers ============================ */
@@ -160,7 +172,8 @@ function seed() {
       ["mock-chat", "Mock Chat", "Gatenix", "Built-in demo model. Routes to the Mock provider — no API key needed.", "free", 0, 0, 0, 128000, '["openai","anthropic"]', "default", '["demo","free"]'],
       ["mock-fast", "Mock Fast", "Gatenix", "Fast built-in demo model for testing the gateway.", "free", 0, 0, 0, 32000, '["openai"]', "default", '["demo","free"]'],
       // ---- Real free models (need a free API key in Channels) ----
-      ["qwen/qwen3.8-max-free", "Qwen3.8 Max (Free)", "Qwen", "Free tier via TokenRouter. Add a TokenRouter channel with your free key.", "free", 0, 0, 0, 262144, '["openai"]', "default", '["free","reasoning"]'],
+      ["z-ai/glm-5.3-free", "GLM 5.3 (Free)", "Z.ai", "Free tier via TokenRouter. Add a TokenRouter channel with your free key.", "free", 0, 0, 0, 262144, '["openai"]', "default", '["free","reasoning"]'],
+      ["z-ai/glm-5.3-flash", "GLM 5.3 Flash", "Z.ai", "Fast GLM model via TokenRouter (paid tier, very cheap).", "token", 0.1, 0.4, 0, 262144, '["openai"]', "default", '["fast"]'],
       ["google/gemini-2.0-flash-exp:free", "Gemini 2.0 Flash (Free)", "Google", "Free model via OpenRouter.", "free", 0, 0, 0, 1048576, '["openai"]', "default", '["free","multimodal"]'],
       ["meta-llama/llama-3.3-70b-instruct:free", "Llama 3.3 70B (Free)", "Meta", "Free model via OpenRouter.", "free", 0, 0, 0, 131072, '["openai"]', "default", '["free","open-source"]'],
       ["deepseek/deepseek-chat-v3-0324:free", "DeepSeek V3 (Free)", "DeepSeek", "Free model via OpenRouter.", "free", 0, 0, 0, 163840, '["openai"]', "default", '["free","reasoning"]'],
@@ -192,8 +205,8 @@ async function init() {
   await persist.restore(DB_PATH);
   openDatabase();
   createSchema();
-  runMigrations();
   seed();
+  runMigrations();
   if (!persist.enabled()) return;
   setInterval(async () => {
     try {

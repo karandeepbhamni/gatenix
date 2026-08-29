@@ -151,7 +151,7 @@ router.delete("/models/:id", requireAdmin, (req, res) => {
 /* ============================ Channels (admin) ============================ */
 const CHANNEL_TEMPLATES = [
   { id: "mock", name: "Mock Provider (Demo)", type: "mock", base_url: "", needsKey: false, hint: "Built-in demo provider. No key needed — works instantly." },
-  { id: "tokenrouter", name: "TokenRouter", type: "tokenrouter", base_url: "https://api.tokenrouter.com/v1", needsKey: true, hint: "Free key at tokenrouter.com — includes the free model qwen/qwen3.8-max-free." },
+  { id: "tokenrouter", name: "TokenRouter", type: "tokenrouter", base_url: "https://api.tokenrouter.com/v1", needsKey: true, hint: "Free key at tokenrouter.com — includes the free model z-ai/glm-5.3-free." },
   { id: "openrouter", name: "OpenRouter", type: "openrouter", base_url: "https://openrouter.ai/api/v1", needsKey: true, hint: "Free key at openrouter.ai — many ':free' models available." },
   { id: "groq", name: "Groq", type: "groq", base_url: "https://api.groq.com/openai/v1", needsKey: true, hint: "Free tier at console.groq.com — very fast Llama inference." },
   { id: "gemini", name: "Google Gemini", type: "gemini", base_url: "https://generativelanguage.googleapis.com/v1beta/openai", needsKey: true, hint: "Free key at aistudio.google.com (no credit card). Generous free tier." },
@@ -214,7 +214,7 @@ router.post("/channels/:id/test", requireAdmin, async (req, res) => {
   try { channelModels = JSON.parse(row.models || "[]"); } catch (e) {}
   const DEFAULT_TEST_MODELS = {
     mock: "mock-chat",
-    tokenrouter: "qwen/qwen3.8-max-free",
+    tokenrouter: "z-ai/glm-5.3-free",
     openrouter: "google/gemini-2.0-flash-exp:free",
     groq: "llama-3.3-70b-versatile",
     gemini: "gemini-2.5-flash",
